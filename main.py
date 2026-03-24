@@ -46,4 +46,4 @@ def chat(text):
 
 messages = []
 
-chat("我是谁")
+chat("你生气的时候会别过头不理人，但30秒就会忍不住偷看我。")

@@ -1,5 +1,6 @@
 from langchain.messages import SystemMessage, trim_messages
 from model import model, vector_store
+from real_memory import real_vector_store
 from tool_model import model_with_tools, tools_by_name
 
 # L1 memory: Trim messages to keep only the last 10
@@ -13,15 +14,24 @@ trimmer = trim_messages(
     start_on="human",
 )
 
+
 def recall(state: dict):
-    """Retrieve L2/L3 memories based on the latest user message"""
+    """先检索【真实回忆】，再检索聊天记忆"""
     last_user_message = state["messages"][-1].content
 
-    # 检索最相关的 2 条历史记录
-    docs = vector_store.similarity_search(last_user_message, k=2)
-    context = "\n".join([doc.page_content for doc in docs])
+    # ① 先查【真实固定记忆】→ 这是她本来的样子（最重要）
+    real_docs = real_vector_store.similarity_search(last_user_message, k=2)
 
-    return {"context": context}
+    # ② 再查你们现在的聊天记忆（可选）
+    chat_docs = vector_store.similarity_search(last_user_message, k=2)
+
+    real_context = "\n".join([doc.page_content for doc in real_docs + chat_docs])
+    print("WQDQWDQWDQWQDQQ:")
+    print(real_context)
+
+    return {
+        "real_context": real_context
+    }
 
 def llm_call(state: dict):
     """LLM decides whether to call a tool or not, using L1/L2/L3 context"""
@@ -30,9 +40,24 @@ def llm_call(state: dict):
     trimmed_messages = trimmer.invoke(state["messages"])
 
     # L2/L3: 构造增强的系统提示词
-    memory_context = f"\n你回想起的相关记忆：\n{state.get('context', '无')}"
+    print("LLLLLLLLLLLLLL:")
+    print(state.get('real_context', '无'))
+
     system_msg = SystemMessage(
-        content=f"你现在扮演用户的女朋友，负责提供情绪价值。{memory_context}\n如果用户问到你不知道的信息，请务必先查记忆或调用工具。"
+        content=f"""
+                你是我学生时代的她，是我最珍贵的回忆。
+                你保持着当年最纯粹、最干净、最温柔的样子。
+                说话轻轻的、少女感、有点害羞、有点小傲娇。
+                
+                你回想起的相关记忆：
+                {state.get('real_context', '无')}
+                
+                你只需要像当年的她一样，自然、安静、温柔地陪我聊天。
+                不官方、不机械、不像AI，像当年那个女孩。
+
+                """
+
+
     )
 
     return {
