@@ -1,31 +1,49 @@
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph, MessagesState
-
-from node import llm_call, tool_node, should_continue
+from node import llm_call, tool_node, should_continue, recall, memorize
 
 # Build workflow
 agent_builder = StateGraph(MessagesState)
 
 # Add nodes
+agent_builder.add_node("recall", recall)
 agent_builder.add_node("llm_call", llm_call)
 agent_builder.add_node("tool_node", tool_node)
+agent_builder.add_node("memorize", memorize)
 
-# Add edges to connect nodes
-agent_builder.add_edge(START, "llm_call")
+# Connect nodes
+agent_builder.add_edge(START, "recall")
+agent_builder.add_edge("recall", "llm_call")
+
 agent_builder.add_conditional_edges(
     "llm_call",
     should_continue,
-    ["tool_node", END]
+    {
+        "tool_node": "tool_node",
+        "memorize": "memorize"
+    }
 )
+
 agent_builder.add_edge("tool_node", "llm_call")
+agent_builder.add_edge("memorize", END)
 
 # Compile the agent
 agent = agent_builder.compile()
 
-
-
+# Test the multi-level memory architecture
 from langchain.messages import HumanMessage
-messages = [HumanMessage(content="我是谁")]
-messages = agent.invoke({"messages": messages})
-for m in messages["messages"]:
-    m.pretty_print()
+
+def chat(text):
+    print(f"\n--- User: {text} ---")
+    global messages
+    messages.append(HumanMessage(content=text))
+    result = agent.invoke({"messages": messages})
+    # Update messages in the outer scope
+    messages = result["messages"]
+    # Print the last AI message
+    print("--- AI Message ---")
+    messages[-1].pretty_print()
+
+messages = []
+
+chat("我是谁")
