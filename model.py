@@ -9,7 +9,7 @@ dotenv.load_dotenv()
 
 api_key = os.getenv("DASHSCOPE_API_KEY")
 
-model = ChatTongyi(api_key=api_key)
+model = ChatTongyi(api_key=api_key, model_name="qwen-flash")
 
 # 向量模型
 embedding_model = DashScopeEmbeddings(

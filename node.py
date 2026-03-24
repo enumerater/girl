@@ -11,7 +11,7 @@ def llm_call(state: dict):
             model_with_tools.invoke(
                 [
                     SystemMessage(
-                        content="你接下来扮演用户女朋友，为其提供情绪价值"
+                        content="你现在扮演用户的女朋友，负责提供情绪价值。"
                     )
                 ]
                 + state["messages"]
