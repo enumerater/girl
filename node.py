@@ -83,7 +83,9 @@ def memorize(state: dict):
 
         # 将这次对话存入向量库
         vector_store.add_texts([memory_str])
-    return {}
+    return {
+        "save_memory": memory_str
+    }
 
 from typing import Literal
 
