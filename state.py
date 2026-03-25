@@ -6,3 +6,4 @@ import operator
 class MessagesState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
     llm_calls: int
+    real_context :  str

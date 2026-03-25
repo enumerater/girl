@@ -1,28 +1,39 @@
 from langchain_chroma import Chroma
-
+import os
 from model import embedding_model
 
-# 真实回忆存在这里，不和聊天记忆混在一起
+# 真实回忆存在这里
 REAL_MEMORY_DIR = "./real_memory_db"
 
-# 加载真实回忆（只会初始化一次，永远不变）
-real_vector_store = Chroma(
-    embedding_function=embedding_model,
-    persist_directory=REAL_MEMORY_DIR,
-)
 
-
-# 只有第一次运行时执行：把 txt 导入
 def import_real_memories_from_txt():
-    import os
     if not os.path.exists(REAL_MEMORY_DIR):
+        print("🔍 首次运行，开始导入真实回忆...")
+
+        # 读取你的回忆文本
         with open("real_memories.txt", "r", encoding="utf-8") as f:
             lines = [line.strip() for line in f if line.strip()]
 
-        # 一次性导入，永不修改、永不添加
-        real_vector_store.add_texts(lines)
+        # 新版 Chroma 会自动保存，不需要 persist()
+        real_vector_store = Chroma.from_texts(
+            texts=lines,
+            embedding=embedding_model,
+            persist_directory=REAL_MEMORY_DIR,
+        )
+
         print("✅ 真实回忆已永久导入，永不改变")
+    else:
+        print("✅ 真实回忆库已存在，跳过导入")
 
 
-# 执行导入（只执行一次！以后永远不要动！）
-import_real_memories_from_txt()
+# 供其他文件调用
+def get_real_memory_vector_store():
+    return Chroma(
+        embedding_function=embedding_model,
+        persist_directory=REAL_MEMORY_DIR,
+    )
+
+real_vector_store = get_real_memory_vector_store()
+
+if __name__ == "__main__":
+    import_real_memories_from_txt()

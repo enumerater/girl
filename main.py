@@ -1,6 +1,7 @@
 from langgraph.constants import START, END
-from langgraph.graph import StateGraph, MessagesState
+from langgraph.graph import StateGraph
 from node import llm_call, tool_node, should_continue, recall, memorize
+from state import MessagesState
 
 # Build workflow
 agent_builder = StateGraph(MessagesState)
@@ -46,4 +47,4 @@ def chat(text):
 
 messages = []
 
-chat("你生气的时候会别过头不理人，但30秒就会忍不住偷看我。")
+chat("用户叫什么")

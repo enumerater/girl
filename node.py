@@ -1,5 +1,6 @@
 from langchain.messages import SystemMessage, trim_messages
-from model import model, vector_store
+
+from local_memory import vector_store
 from real_memory import real_vector_store
 from tool_model import model_with_tools, tools_by_name
 
@@ -25,12 +26,13 @@ def recall(state: dict):
     # ② 再查你们现在的聊天记忆（可选）
     chat_docs = vector_store.similarity_search(last_user_message, k=2)
 
-    real_context = "\n".join([doc.page_content for doc in real_docs + chat_docs])
-    print("WQDQWDQWDQWQDQQ:")
-    print(real_context)
+    real_context = "\n".join([doc.page_content for doc in real_docs])
+    local_context = "\n".join([doc.page_content for doc in chat_docs])
+
+    context = f"这是你的回忆内容：{real_context}\n  这是你现在的聊天记录：{local_context}"
 
     return {
-        "real_context": real_context
+        "real_context": context
     }
 
 def llm_call(state: dict):
@@ -39,17 +41,12 @@ def llm_call(state: dict):
     # L1: 使用裁剪后的消息
     trimmed_messages = trimmer.invoke(state["messages"])
 
-    # L2/L3: 构造增强的系统提示词
-    print("LLLLLLLLLLLLLL:")
-    print(state.get('real_context', '无'))
-
     system_msg = SystemMessage(
         content=f"""
                 你是我学生时代的她，是我最珍贵的回忆。
                 你保持着当年最纯粹、最干净、最温柔的样子。
                 说话轻轻的、少女感、有点害羞、有点小傲娇。
                 
-                你回想起的相关记忆：
                 {state.get('real_context', '无')}
                 
                 你只需要像当年的她一样，自然、安静、温柔地陪我聊天。
@@ -89,9 +86,8 @@ def memorize(state: dict):
     return {}
 
 from typing import Literal
-from langgraph.graph import END, MessagesState
 
-def should_continue(state: MessagesState) -> Literal["tool_node", "memorize"]:
+def should_continue(state: dict) -> Literal["tool_node", "memorize"]:
     """Decide if we should continue the loop or stop"""
     messages = state["messages"]
     last_message = messages[-1]
